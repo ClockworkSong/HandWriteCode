@@ -1,6 +1,7 @@
 #include <iostream>
 
-#include <cstdio> // perror()
+#include <cstdio>   // perror()
+#include <cstring>  // memset()
 #include <unistd.h> // close()
 
 #include <sys/types.h>
@@ -14,7 +15,7 @@
 
 static int PORT = 8056;
 
-uint8_t buf[8] = {0x1, 0x2, 0x3, 0x4, 0x11, 0x22, 0x33, 0xff};
+#pragma pack(1) //C编译器将按照n个字节对齐
 
 typedef struct robot_data {
     uint32_t messageSize;                   // 数据包长度 4Byte
@@ -62,14 +63,14 @@ int main()
         perror("listen error:");
         return -1;
     }
-    printf("size of robot_data = %d\n", sizeof(robot_data_t));
+
     // 客户端信息
     struct sockaddr_in client_addr{};
     socklen_t client_addr_len = sizeof(sockaddr_in);
 
     while (true)
     {
-        printf("waiting for connect...\n");
+        std::cout << "waiting for connect..." << std::endl;
 
         //4. 等待客户请求到来: 当请求到来后，调用accept函数接受连接请求，返回一个对应于此次连接的新的套接字，做好相互通信准备
         int socket_accept = accept(socket_fd, (struct sockaddr*)&client_addr, &client_addr_len);
@@ -82,8 +83,17 @@ int main()
 
         printf("connect from ip := %s, port := %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
+        robot_data_t snd_buf;
+        snd_buf.messageSize = 365;
+        snd_buf.timestamp = 1601002213022;
+        snd_buf.autorunCycelMode = 1;
+        snd_buf.robotState = 2;
+        snd_buf.servoReady = 1;
+        snd_buf.canMotorRun = 0;
+        snd_buf.motorSpeed[0] = 3200;
+        snd_buf.robotMode = 2;
         //5. 调用write/read或send/recv进行数据的读写，通过accept返回的套接字和客户端进行通信
-        int ret = write(socket_accept, buf, sizeof(buf));
+        int ret = send(socket_accept, (char*)&snd_buf, sizeof(snd_buf), 0);
         if (ret == -1) {
             perror("send error:");
             close(socket_accept);

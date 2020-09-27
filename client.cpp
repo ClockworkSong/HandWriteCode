@@ -15,8 +15,8 @@
 
 static int PORT = 8056;
 
+#pragma pack(push)
 #pragma pack(1) //C编译器将按照n个字节对齐
-
 typedef struct robot_data {
     uint32_t messageSize;                   // 数据包长度 4Byte
     uint64_t timestamp;                     // 时间戳  8Byte
@@ -35,6 +35,7 @@ typedef struct robot_data {
     uint64_t digitalIoInput;                // 数字量输入数据  8Byte
     uint64_t digitalIoOutput;               // 数字量输出数据  8Byte
 }robot_data_t;
+#pragma pack(pop)
 
 int main()
 {

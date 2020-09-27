@@ -3,5 +3,6 @@ project(server)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(ELT_SRV server.cpp)
-add_executable(ELT_CLT client.cpp)
+add_executable(SRV server.cpp)
+add_executable(CLT client.cpp)
+add_executable(ELT_CLT EliteClient.cpp)

@@ -3,6 +3,4 @@ project(SocketTest)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(SRV server.cpp)
-add_executable(CLT client.cpp)
-add_executable(ELT_CLT EliteClient.cpp)
+add_executable(ELT_CLT src/elite_client.cpp)

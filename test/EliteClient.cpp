@@ -53,17 +53,17 @@ int big2little_32(int be)
            | ((be << 24) & 0xff000000);// byte 0 to byte 3
 }
 
-//double big2little_64(double be)
-//{
-//    return ((be >> 56) & 0xff ) // move byte 7 to byte 0                    0x12
-//           | ((be >> 40) & 0xFF00)// move byte 6 to byte 1                  0x34
-//           | ((be >> 24) & 0xFF0000)// move byte 5 to byte 2                0x56
-//           | ((be >> 8) & 0xFF000000)// move byte 4 to byte 3               0x78
-//           | ((be << 8) & 0xFF00000000)// move byte 3 to byte 4             0x76
-//           | ((be << 24) & 0xFF0000000000)// move byte 2 to byte 5          0x54
-//           | ((be << 40) & 0xFF000000000000)// move byte 1 to byte 6        0x32
-//           | ((be << 56) & 0xFF00000000000000);// move byte 0 to byte 7     0x10
-//}
+long big2little_64(long be)
+{
+    return ((be >> 56) & 0xff ) // move byte 7 to byte 0                    0x12
+           | ((be >> 40) & 0xFF00)// move byte 6 to byte 1                  0x34
+           | ((be >> 24) & 0xFF0000)// move byte 5 to byte 2                0x56
+           | ((be >> 8) & 0xFF000000)// move byte 4 to byte 3               0x78
+           | ((be << 8) & 0xFF00000000)// move byte 3 to byte 4             0x76
+           | ((be << 24) & 0xFF0000000000)// move byte 2 to byte 5          0x54
+           | ((be << 40) & 0xFF000000000000)// move byte 1 to byte 6        0x32
+           | ((be << 56) & 0xFF00000000000000);// move byte 0 to byte 7     0x10
+}
 
 int main()
 {
@@ -79,7 +79,7 @@ int main()
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("10.211.55.5");
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     int socket_connect = connect(socket_fd, (struct sockaddr *) &server_addr, sizeof(sockaddr_in));
     if(socket_connect == -1) {
         perror("bind error:");
@@ -98,18 +98,19 @@ int main()
     int y = 0x12345678;
     printf("before y= %x, after y=%x\n", y, big2little_32(y));
 
-//    double z = 0x1234567876543210;
-//    printf("before z= %x, after z=%x\n", y, big2little_64(z));
+    long z = 0x1234567876543210;
+    printf("sizeof log = %lu\n", sizeof(long));
+    printf("before z= %lx, after z=%lx\n", z, big2little_64(z));
 
     printf("recv byte = %d\n", ret);
     printf("messageSize = %d\n", big2little_32(rcv_buf.messageSize));
-    printf("timestamp = %llu\n", rcv_buf.timestamp);
+    printf("timestamp = %lu\n", big2little_64(rcv_buf.timestamp));
     printf("autorunCycelMode = %d\n", rcv_buf.autorunCycelMode);
-    printf("robotState = %d\n", rcv_buf.robotState);
-    printf("servoReady = %d\n", rcv_buf.servoReady);
-    printf("canMotorRun = %d\n", rcv_buf.canMotorRun);
-    printf("motorSpeed[0] = %d\n", rcv_buf.motorSpeed[0]);
-    printf("robotMode = %d\n", rcv_buf.robotMode);
+    printf("robotState = %d\n", big2little_32(rcv_buf.robotState));
+    printf("servoReady = %d\n", big2little_32(rcv_buf.servoReady));
+    printf("canMotorRun = %d\n", big2little_32(rcv_buf.canMotorRun));
+    printf("motorSpeed[0] = %d\n", big2little_32(rcv_buf.motorSpeed[0]));
+    printf("robotMode = %d\n", big2little_32(rcv_buf.robotMode));
 
     //6. 关闭服务套接口close
     close(socket_fd);

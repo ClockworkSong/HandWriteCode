@@ -10,6 +10,8 @@
 #include <arpa/inet.h>
 #include <endian.h>
 
+#include<math.h>
+
 #define AXIS_COUNT 8
 #define ANALOG_IN_NUM 3
 #define ANALOG_OUT_NUM 5
@@ -22,7 +24,7 @@ typedef struct robot_data {
     uint32_t messageSize;                   // 数据包长度 4Byte
     uint64_t timestamp;                     // 时间戳  8Byte
     uint8_t autorunCycelMode;               // 循环模式 1Byte
-    long machinePos[AXIS_COUNT];          // 关节角度，单位：度 64Byte
+    double machinePos[AXIS_COUNT];          // 关节角度，单位：度 64Byte
     double machinePose[6];                  // 直角坐标，X,Y,Z单位：毫米 Rx,Ry,Rz单位：弧度 48Byte
     double machineUserPose[6];              // 用户坐标，X,Y,Z单位：毫米 Rx,Ry,Rz单位：弧度 48Byte
     double torque[AXIS_COUNT];              // 关节额定力矩百分比，单位：百分比 64Byte
@@ -38,6 +40,86 @@ typedef struct robot_data {
 }robot_data_t;
 #pragma pack(pop)
 
+//将字节中pos位置开始的len位的二进制数转换为整数
+unsigned int getbitu(const unsigned char *buff, int pos, int len)
+{
+    unsigned int bits=0;
+    int i;
+    for (i=pos;i<pos+len;i++)
+    {
+        bits=(bits<<1)+((buff[i/8]>>(7-i%8))&1u);   //从高位到低位逐位计算
+    }
+    return bits;
+}
+
+float HexToFloat(const unsigned char *buf)
+{
+    float value = 0.0;
+    unsigned int i = 0;
+    unsigned int num, temp;
+    int num2;
+    bool flags1 = true;
+
+    num = getbitu(buf, i, 1); //标志位
+    i = i + 1;
+    //指数部分,float型数据其规定偏移量为127,阶码有正有负，对于8位二进制，则其表示范围为-128-127
+    num2 = getbitu(buf, i, 8) - 127;
+    i = i + 8;
+
+    while(1)
+    {
+        if(flags1)
+        {
+            value += 1 * pow(2, num2);
+            num2--;
+            flags1 = false;
+        }
+        temp = getbitu(buf, i, 1);
+        i += 1;
+        value += temp * pow(2, num2);
+        num2--;
+
+        if(i == 32)
+            break;
+    }
+
+    if(num == 1)
+        value *= -1;
+
+    return value;
+}
+
+double HexToDouble(const unsigned char* buf)
+{
+    double value = 0;
+    unsigned int i = 0;
+    unsigned int num,temp;
+    int num2;
+    bool flags1 = true;
+
+    num = getbitu(buf,i,1); //标志位               
+    i += 1;
+    //double型规定偏移量为1023，其表示范围为-1024-1023
+    num2 = getbitu(buf,i,11) - 1023;        
+    i += 11;    
+
+    while(1)
+    {
+        if(flags1)
+        {
+            flags1 = false;
+            value += 1 * pow(2,num2); num2--;
+        }
+        temp = getbitu(buf,i,1);    i += 1;
+        value += temp * pow(2,num2); num2--;
+        if(i == 64)
+            break;
+    }
+    if(num == 1)
+        value *= -1;
+
+    return value;
+}
 
 int main()
 {
@@ -53,7 +135,7 @@ int main()
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_addr.s_addr = inet_addr("10.211.55.5");
     int socket_connect = connect(socket_fd, (struct sockaddr *) &server_addr, sizeof(sockaddr_in));
     if(socket_connect == -1) {
         perror("bind error:");
@@ -71,7 +153,6 @@ int main()
     printf("before x= %x, after x=%x\n", x, be16toh(x));
     int y = 0x12345678;
     printf("before y= %x, after y=%x\n", y, be32toh(y));
-
     long z = 0x1234567876543210;
     printf("before z= %lx, after z=%lx\n", z, be64toh(z));
 
@@ -80,15 +161,18 @@ int main()
     printf("timestamp = %lu\n", be64toh(rcv_buf.timestamp));
     printf("autorunCycelMode = %d\n", rcv_buf.autorunCycelMode);
 
-    printf("machinePos[0] = %lx\n", be64toh(rcv_buf.machinePos[0]));
-    printf("machinePos[1] = %lx\n", be64toh(rcv_buf.machinePos[1]));
-    printf("machinePos[2] = %lx\n", be64toh(rcv_buf.machinePos[2]));
-    printf("machinePos[3] = %lu\n", be64toh(rcv_buf.machinePos[3]));
-    printf("machinePos[4] = %lu\n", be64toh(rcv_buf.machinePos[4]));
-    printf("machinePos[5] = %lu\n", be64toh(rcv_buf.machinePos[5]));
+    long pos0 = rcv_buf.machinePos[0];
+    printf("machinePos[0] = %lx\n", be64toh(pos0));
+    // printf("machinePos[0] = %lx\n", be64toh(rcv_buf.machinePos[0]));
+    // printf("machinePos[1] = %lx\n", be64toh(rcv_buf.machinePos[1]));
+    // printf("machinePos[2] = %lx\n", be64toh(rcv_buf.machinePos[2]));
+    // printf("machinePos[3] = %lu\n", be64toh(rcv_buf.machinePos[3]));
+    // printf("machinePos[4] = %lu\n", be64toh(rcv_buf.machinePos[4]));
+    // printf("machinePos[5] = %lu\n", be64toh(rcv_buf.machinePos[5]));
 
-    double pos = be64toh(rcv_buf.machinePos[0]);
-    printf("pos = %f\n", pos);
+    unsigned char a[] = { 0xe7, 0x6b, 0xf5, 0xec, 0x10, 0x54, 0x5a, 0xc0};
+    double *p = (double*)a;
+    printf("%f\n", *p);
 
     printf("robotState = %d\n", be32toh(rcv_buf.robotState));
     printf("servoReady = %d\n", be32toh(rcv_buf.servoReady));

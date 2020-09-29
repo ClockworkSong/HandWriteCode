@@ -71,6 +71,8 @@ int main()
     printf("robotState = %d\n", rcv_buf.robotState);
     printf("servoReady = %d\n", rcv_buf.servoReady);
     printf("canMotorRun = %d\n", rcv_buf.canMotorRun);
+     printf("machinePos[0] = %lx\n", rcv_buf.machinePos[0]);
+    std::cout << "machinePos0: " << rcv_buf.machinePos[0] << std::endl;
     printf("motorSpeed[0] = %d\n", rcv_buf.motorSpeed[0]);
     printf("robotMode = %d\n", rcv_buf.robotMode);
 

@@ -91,6 +91,7 @@ int main()
         snd_buf.robotState = 2;
         snd_buf.servoReady = 1;
         snd_buf.canMotorRun = 0;
+        snd_buf.machinePos[0] = -105.313533;
         snd_buf.motorSpeed[0] = 3200;
         snd_buf.robotMode = 2;
         //5. 调用write/read或send/recv进行数据的读写，通过accept返回的套接字和客户端进行通信

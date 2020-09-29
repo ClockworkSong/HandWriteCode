@@ -60,7 +60,7 @@ int main()
     robot_data_t rcv_buf;
     memset(&rcv_buf, 0, sizeof(rcv_buf));
     //5. 调用write/read或send/recv进行数据的读写
-    int ret = recv(socket_fd, (char*)&rcv_buf, sizeof(rcv_buf), 0);
+    int ret = recv(socket_fd, &rcv_buf, sizeof(rcv_buf), 0);
     if (ret == -1) {
         perror("recv error:");
     }
@@ -71,8 +71,13 @@ int main()
     printf("robotState = %d\n", rcv_buf.robotState);
     printf("servoReady = %d\n", rcv_buf.servoReady);
     printf("canMotorRun = %d\n", rcv_buf.canMotorRun);
-     printf("machinePos[0] = %lx\n", rcv_buf.machinePos[0]);
+    printf("%lx, %f\n", *((unsigned long *)&(rcv_buf.machinePos[0])), rcv_buf.machinePos[0]);
     std::cout << "machinePos0: " << rcv_buf.machinePos[0] << std::endl;
+    printf("%f\n", rcv_buf.machinePos[1]);
+    std::cout << "machinePos1: " << rcv_buf.machinePos[1] << std::endl;
+    printf("%f\n", rcv_buf.machinePos[2]);
+    std::cout << "machinePos2: " << rcv_buf.machinePos[2] << std::endl;
+
     printf("motorSpeed[0] = %d\n", rcv_buf.motorSpeed[0]);
     printf("robotMode = %d\n", rcv_buf.robotMode);
 

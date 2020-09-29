@@ -92,10 +92,12 @@ int main()
         snd_buf.servoReady = 1;
         snd_buf.canMotorRun = 0;
         snd_buf.machinePos[0] = -105.313533;
+        snd_buf.machinePos[1] = 95.1234;
+        snd_buf.machinePos[2] = -95.12345667;
         snd_buf.motorSpeed[0] = 3200;
         snd_buf.robotMode = 2;
         //5. 调用write/read或send/recv进行数据的读写，通过accept返回的套接字和客户端进行通信
-        int ret = send(socket_accept, (char*)&snd_buf, sizeof(snd_buf), 0);
+        int ret = send(socket_accept, &snd_buf, sizeof(snd_buf), 0);
         if (ret == -1) {
             perror("send error:");
             close(socket_accept);

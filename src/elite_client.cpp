@@ -40,86 +40,19 @@ typedef struct robot_data {
 }robot_data_t;
 #pragma pack(pop)
 
-//将字节中pos位置开始的len位的二进制数转换为整数
-unsigned int getbitu(const unsigned char *buff, int pos, int len)
+//将double类型数据进行大端到小端的转换
+double convert(double d) 
 {
-    unsigned int bits=0;
-    int i;
-    for (i=pos;i<pos+len;i++)
-    {
-        bits=(bits<<1)+((buff[i/8]>>(7-i%8))&1u);   //从高位到低位逐位计算
-    }
-    return bits;
+    unsigned long a = *((unsigned long *)&d);
+    // printf("pos0 a address = 0x%lx\n", a);
+    unsigned long b = be64toh(a);
+    // printf("pos0 b address = 0x%lx\n", b);
+    double *p = (double*)&b;
+    // printf("val = %f\n", *p);
+
+    return *p;
 }
 
-float HexToFloat(const unsigned char *buf)
-{
-    float value = 0.0;
-    unsigned int i = 0;
-    unsigned int num, temp;
-    int num2;
-    bool flags1 = true;
-
-    num = getbitu(buf, i, 1); //标志位
-    i = i + 1;
-    //指数部分,float型数据其规定偏移量为127,阶码有正有负，对于8位二进制，则其表示范围为-128-127
-    num2 = getbitu(buf, i, 8) - 127;
-    i = i + 8;
-
-    while(1)
-    {
-        if(flags1)
-        {
-            value += 1 * pow(2, num2);
-            num2--;
-            flags1 = false;
-        }
-        temp = getbitu(buf, i, 1);
-        i += 1;
-        value += temp * pow(2, num2);
-        num2--;
-
-        if(i == 32)
-            break;
-    }
-
-    if(num == 1)
-        value *= -1;
-
-    return value;
-}
-
-double HexToDouble(const unsigned char* buf)
-{
-    double value = 0;
-    unsigned int i = 0;
-    unsigned int num,temp;
-    int num2;
-    bool flags1 = true;
-
-    num = getbitu(buf,i,1); //标志位               
-    i += 1;
-    //double型规定偏移量为1023，其表示范围为-1024-1023
-    num2 = getbitu(buf,i,11) - 1023;        
-    i += 11;    
-
-    while(1)
-    {
-        if(flags1)
-        {
-            flags1 = false;
-            value += 1 * pow(2,num2); num2--;
-        }
-        temp = getbitu(buf,i,1);    i += 1;
-        value += temp * pow(2,num2); num2--;
-        if(i == 64)
-            break;
-    }
-    if(num == 1)
-        value *= -1;
-
-    return value;
-}
 
 int main()
 {
@@ -149,35 +82,55 @@ int main()
         perror("recv error:");
     }
 
-    short x = 0x1234;
-    printf("before x= %x, after x=%x\n", x, be16toh(x));
-    int y = 0x12345678;
-    printf("before y= %x, after y=%x\n", y, be32toh(y));
-    long z = 0x1234567876543210;
-    printf("before z= %lx, after z=%lx\n", z, be64toh(z));
-
     printf("recv byte = %d\n", ret);
     printf("messageSize = %d\n", be32toh(rcv_buf.messageSize));
     printf("timestamp = %lu\n", be64toh(rcv_buf.timestamp));
     printf("autorunCycelMode = %d\n", rcv_buf.autorunCycelMode);
 
-    long pos0 = rcv_buf.machinePos[0];
-    printf("machinePos[0] = %lx\n", be64toh(pos0));
-    // printf("machinePos[0] = %lx\n", be64toh(rcv_buf.machinePos[0]));
-    // printf("machinePos[1] = %lx\n", be64toh(rcv_buf.machinePos[1]));
-    // printf("machinePos[2] = %lx\n", be64toh(rcv_buf.machinePos[2]));
-    // printf("machinePos[3] = %lu\n", be64toh(rcv_buf.machinePos[3]));
-    // printf("machinePos[4] = %lu\n", be64toh(rcv_buf.machinePos[4]));
-    // printf("machinePos[5] = %lu\n", be64toh(rcv_buf.machinePos[5]));
+    // 关节角度，单位：度
+    printf("machinePos[0] = %lf\n", convert(rcv_buf.machinePos[0]));
+    printf("machinePos[1] = %lf\n", convert(rcv_buf.machinePos[1]));
+    printf("machinePos[2] = %lf\n", convert(rcv_buf.machinePos[2]));
+    printf("machinePos[3] = %lf\n", convert(rcv_buf.machinePos[3]));
+    printf("machinePos[4] = %lf\n", convert(rcv_buf.machinePos[4]));
+    printf("machinePos[5] = %lf\n", convert(rcv_buf.machinePos[5]));
 
-    unsigned char a[] = { 0xe7, 0x6b, 0xf5, 0xec, 0x10, 0x54, 0x5a, 0xc0};
-    double *p = (double*)a;
-    printf("%f\n", *p);
+    // 直角坐标，X,Y,Z单位：毫米 Rx,Ry,Rz单位：弧度
+    printf("machinePose[0] = %lf\n", convert(rcv_buf.machinePose[0]));
+    printf("machinePose[1] = %lf\n", convert(rcv_buf.machinePose[1]));
+    printf("machinePose[2] = %lf\n", convert(rcv_buf.machinePose[2]));
+    printf("machinePose[3] = %lf\n", convert(rcv_buf.machinePose[3]));
+    printf("machinePose[4] = %lf\n", convert(rcv_buf.machinePose[4]));
+    printf("machinePose[5] = %lf\n", convert(rcv_buf.machinePose[5]));
+
+    // 用户坐标，X,Y,Z单位：毫米 Rx,Ry,Rz单位：弧度
+    printf("machineUserPose[0] = %lf\n", convert(rcv_buf.machineUserPose[0]));
+    printf("machineUserPose[1] = %lf\n", convert(rcv_buf.machineUserPose[1]));
+    printf("machineUserPose[2] = %lf\n", convert(rcv_buf.machineUserPose[2]));
+    printf("machineUserPose[3] = %lf\n", convert(rcv_buf.machineUserPose[3]));
+    printf("machineUserPose[4] = %lf\n", convert(rcv_buf.machineUserPose[4]));
+    printf("machineUserPose[5] = %lf\n", convert(rcv_buf.machineUserPose[5]));
+
+    // 关节额定力矩百分比，单位：百分比
+    printf("torque[0] = %lf\n", convert(rcv_buf.torque[0]));
+    printf("torque[1] = %lf\n", convert(rcv_buf.torque[1]));
+    printf("torque[2] = %lf\n", convert(rcv_buf.torque[2]));
+    printf("torque[3] = %lf\n", convert(rcv_buf.torque[3]));
+    printf("torque[4] = %lf\n", convert(rcv_buf.torque[4]));
+    printf("torque[5] = %lf\n", convert(rcv_buf.torque[5]));
 
     printf("robotState = %d\n", be32toh(rcv_buf.robotState));
     printf("servoReady = %d\n", be32toh(rcv_buf.servoReady));
     printf("canMotorRun = %d\n", be32toh(rcv_buf.canMotorRun));
+    
+    // 电机速度，单位：转/分
     printf("motorSpeed[0] = %d\n", be32toh(rcv_buf.motorSpeed[0]));
+    printf("motorSpeed[1] = %d\n", be32toh(rcv_buf.motorSpeed[1]));
+    printf("motorSpeed[2] = %d\n", be32toh(rcv_buf.motorSpeed[2]));
+    printf("motorSpeed[3] = %d\n", be32toh(rcv_buf.motorSpeed[3]));
+    printf("motorSpeed[4] = %d\n", be32toh(rcv_buf.motorSpeed[4]));
+    printf("motorSpeed[5] = %d\n", be32toh(rcv_buf.motorSpeed[5]));
+
     printf("robotMode = %d\n", be32toh(rcv_buf.robotMode));
 
     //6. 关闭服务套接口close

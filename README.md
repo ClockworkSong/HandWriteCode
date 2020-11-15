@@ -1,1 +1,1 @@
-# This is a SocketTest!
+# Let's begain hand write code!

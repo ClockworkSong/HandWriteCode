@@ -7,7 +7,7 @@ int main()
 	const char* name = "songxiaodong";
 
 	printf("name = %s, mylen = %lu\n", name, mystrlen(name));
-	printf("Hello world 04\n");
+	printf("Hello world 05\n");
 
 	return 0;
 }
